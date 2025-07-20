@@ -33,6 +33,7 @@ class RallyCoordinator {
         // Control elements
         this.clearAllBtn = document.getElementById('clearAll');
         this.startCoordinationBtn = document.getElementById('startCoordination');
+        this.startFromOverviewBtn = document.getElementById('startFromOverview');
         this.stopCoordinationBtn = document.getElementById('stopCoordination');
         
         // Coordination elements
@@ -49,6 +50,7 @@ class RallyCoordinator {
         this.rallyForm.addEventListener('submit', (e) => this.handleAddRally(e));
         this.clearAllBtn.addEventListener('click', () => this.clearAllRallies());
         this.startCoordinationBtn.addEventListener('click', () => this.startCoordination());
+        this.startFromOverviewBtn.addEventListener('click', () => this.startCoordination());
         this.stopCoordinationBtn.addEventListener('click', () => this.stopCoordination());
     }
 
@@ -242,6 +244,9 @@ class RallyCoordinator {
         const hasLeaders = this.rallyLeaders.length > 0;
         this.clearAllBtn.disabled = !hasLeaders || this.isCoordinationActive;
         this.startCoordinationBtn.disabled = !hasLeaders || this.isCoordinationActive;
+        if (this.startFromOverviewBtn) {
+            this.startFromOverviewBtn.disabled = !hasLeaders || this.isCoordinationActive;
+        }
     }
 
     updateRallyCount() {
