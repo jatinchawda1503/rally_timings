@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rally Timing Coordinator</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-chess-rook"></i>
+                <h1>Rally Coordinator</h1>
+            </div>
+            <p class="subtitle">Synchronize your attacks for maximum impact</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Add Rally Leader Form -->
+            <section class="add-rally-section">
+                <h2><i class="fas fa-plus-circle"></i> Add Rally Leader</h2>
+                <form id="rallyForm" class="rally-form">
+                    <div class="form-group">
+                        <label for="leaderName">
+                            <i class="fas fa-user"></i>
+                            Leader Name
+                        </label>
+                        <input type="text" id="leaderName" placeholder="Enter leader name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="marchTime">
+                            <i class="fas fa-clock"></i>
+                            March Time (seconds)
+                        </label>
+                        <input type="number" id="marchTime" placeholder="Time to reach castle (seconds)" min="1" step="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="delay">
+                            <i class="fas fa-hourglass-half"></i>
+                            Additional Delay (seconds)
+                        </label>
+                        <input type="number" id="delay" placeholder="Extra delay time (seconds)" min="0" step="1" value="0">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Add Rally Leader
+                    </button>
+                </form>
+            </section>
+
+            <!-- Rally Leaders List -->
+            <section class="rally-list-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> Rally Leaders</h2>
+                    <div class="rally-count">
+                        <span id="rallyCount">0</span> leaders ready
+                    </div>
+                </div>
+                
+                <div id="rallyList" class="rally-list">
+                    <div class="empty-state">
+                        <i class="fas fa-users-slash"></i>
+                        <p>No rally leaders added yet</p>
+                        <small>Add rally leaders to start coordinating attacks</small>
+                    </div>
+                </div>
+                
+                <div class="rally-controls">
+                    <button id="clearAll" class="btn btn-secondary" disabled>
+                        <i class="fas fa-trash"></i>
+                        Clear All
+                    </button>
+                    <button id="startCoordination" class="btn btn-success" disabled>
+                        <i class="fas fa-play"></i>
+                        Start Coordination
+                    </button>
+                </div>
+            </section>
+
+            <!-- Launch Overview Section -->
+            <section class="overview-section" id="overviewSection" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-eye"></i> Launch Overview</h2>
+                    <div class="overview-badge">
+                        <span id="overviewCount">0</span> leaders ready
+                    </div>
+                </div>
+                
+                <div class="overview-content">
+                    <p class="overview-description">
+                        <i class="fas fa-info-circle"></i>
+                        Review the launch sequence below. Rallies will start at different times so the last one with delay hits the castle when planned.
+                    </p>
+                    
+                    <div id="overviewList" class="overview-list">
+                        <!-- Launch preview will be populated here -->
+                    </div>
+                    
+                    <div class="overview-summary">
+                        <div class="summary-item">
+                            <i class="fas fa-stopwatch"></i>
+                            <span>Total coordination time: <strong id="totalCoordinationTime">0s</strong></span>
+                        </div>
+                        <div class="summary-item">
+                            <i class="fas fa-bullseye"></i>
+                            <span>Final rally arrives: <strong id="arrivalTime">0s</strong> after start</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Countdown and Status -->
+            <section class="coordination-section" id="coordinationSection" style="display: none;">
+                <div class="countdown-display">
+                    <h2>Coordination Active</h2>
+                    <div class="countdown-timer" id="countdownTimer">5</div>
+                    <p class="countdown-label">seconds until first launch</p>
+                </div>
+                
+                <div class="current-status" id="currentStatus">
+                    <div class="status-message">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="statusText">Preparing coordination...</span>
+                    </div>
+                </div>
+                
+                <div class="launch-sequence" id="launchSequence">
+                    <!-- Launch timeline will be populated here -->
+                </div>
+                
+                <button id="stopCoordination" class="btn btn-danger">
+                    <i class="fas fa-stop"></i>
+                    Stop Coordination
+                </button>
+            </section>
+        </main>
+        
+        <!-- Audio for notifications -->
+        <audio id="countdownAudio" preload="auto">
+            <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAK" type="audio/wav">
+        </audio>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html> 

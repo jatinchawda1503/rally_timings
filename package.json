@@ -1,0 +1,40 @@
+{
+  "name": "rally-timing-coordinator",
+  "version": "1.0.0",
+  "description": "A modern web application for coordinating rally attacks to ensure synchronized arrival at a castle",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx live-server --port=3000 --open=/index.html",
+    "dev": "npx live-server --port=3000 --open=/index.html --watch=.",
+    "build": "echo 'This is a static web application - no build process needed'",
+    "serve": "npx http-server -p 3000 -o"
+  },
+  "keywords": [
+    "rally",
+    "timing",
+    "coordination",
+    "strategy",
+    "game",
+    "web-app",
+    "javascript",
+    "html",
+    "css"
+  ],
+  "author": "Rally Coordinator Team",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/example/rally-timing-coordinator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/example/rally-timing-coordinator/issues"
+  },
+  "homepage": "https://github.com/example/rally-timing-coordinator#readme"
+} 
