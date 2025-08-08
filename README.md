@@ -1,185 +1,151 @@
 # Rally Timing Coordinator 🏰
 
-A modern web application for coordinating rally attacks to ensure synchronized arrival at a castle. Perfect for strategy games where timing is everything!
+A modern Next.js application for coordinating rally attacks so they arrive in a precise sequence. Perfect for strategy games where timing is everything.
 
 ## ✨ Features
 
 - **Modern UI**: Clean, responsive design with smooth animations
-- **Rally Management**: Add, edit, and remove rally leaders with custom march times and arrival offsets
-- **Smart Sorting**: Automatically sorts rallies by start time (earliest launch first)
-- **Launch Overview**: Visual preview of launch sequence with timing details before starting
-- **Staggered Coordination**: Calculates optimal start times for delayed arrival sequence
+- **Rally Management**: Add, edit, and remove rally leaders with march times and arrival offsets
+- **Smart Sorting**: Automatically sorts rallies by earliest start time
+- **Launch Overview**: Clear preview of start order, start offsets, and arrival times
+- **Staggered Coordination**: Start times calculated so each rally arrives at its offset after the first hit
 - **Live Countdown**: 5-second countdown before coordination begins
-- **Real-time Tracking**: Visual indicators showing who should launch when
-- **Audio Feedback**: Sound notifications for countdown and launch events
-- **Mobile Responsive**: Works perfectly on desktop, tablet, and mobile devices
+- **Real-time Tracking**: Status per leader (waiting → ready → go → completed)
+- **Mobile Friendly**: Works great on desktop and mobile
 
-## 🚀 How It Works
+## 🧠 How It Works
 
-### The Concept
-The goal is to coordinate multiple rally leaders with staggered arrival times. The "Arrival Offset" controls how many seconds AFTER the first rally hits, each subsequent rally should arrive. Leaders with longer march times need to start earlier; leaders with larger offsets arrive later relative to the first hit.
+### Concept
 
-### Example Scenario
-- **Leader A**: 300 seconds march time + 0 seconds offset = hits at 300s
-- **Leader B**: 300 seconds march time + 1 second offset = hits at 301s  
-- **Leader C**: 300 seconds march time + 2 seconds offset = hits at 302s
+Arrival Offset is how many seconds after the first hit a leader should arrive. Leaders with larger offsets arrive later; leaders with longer march times must start earlier to still meet their offset.
 
-**Launch Order** (earliest start time first):
-1. Leader A starts immediately (needs 300s to hit at 300s)
-2. Leader B starts 1 second later (needs 300s to hit at 301s)
-3. Leader C starts 2 seconds later (needs 300s to hit at 302s)
+### Timing math
 
-**Result**: A hits first, then B hits 1 second later, then C hits 1 second after B!
+For each leader with `marchTime` and `arrivalOffset`:
 
-## 🎮 How to Use
+```text
+base        = max(marchTime - arrivalOffset)
+startOffset = base - (marchTime - arrivalOffset)
+arrivalTime = startOffset + marchTime = base + arrivalOffset
+```
+
+Leaders are sorted by `startOffset` so the earliest starter is first (often the one with offset 0).
+
+## 🎮 Usage
 
 1. **Add Rally Leaders**
-   - Enter the leader's name
-   - Set their march time in seconds (how long it takes to reach the castle)
-   - Set Arrival Offset in seconds (how many seconds AFTER the first rally this one should hit)
-   - Click "Add Rally Leader"
-
-2. **Review Your Team**
-   - Leaders are automatically sorted by start time (earliest first)
-   - Edit march times and arrival offsets by clicking the edit button
-   - Remove leaders if needed
-
-3. **Preview Launch Strategy**
-   - Review the launch overview section that appears automatically
-   - See who starts 1st, 2nd, 3rd with individual arrival times
-   - Check total coordination time and final rally arrival
-   - Visual timing bars show the staggered launch sequence
-
+   - Enter Name
+   - Set March Time (seconds it takes to reach the castle)
+   - Set Arrival Offset (seconds after the first hit to arrive)
+2. **Review & Edit**
+   - Leaders auto-sort by start time
+   - Edit march time or arrival offset as needed
+   - Remove unwanted entries
+3. **Preview Launch**
+   - See start order, start offsets, and arrival times
 4. **Start Coordination**
-   - Click "Start Coordination" from either the rally controls or overview section
-   - 5-second countdown begins
-   - Follow the launch sequence instructions
-   - Watch for "LAUNCH NOW!" indicators
+   - Click Start to begin a 5-second countdown
+   - Follow the live status per leader (waiting/ready/go/completed)
 
-5. **Execute the Plan**
-   - Leaders launch according to the calculated timing
-   - Visual indicators show current status
-   - Rallies arrive in the planned staggered sequence at the target
+## 🚀 Getting Started
 
-## 🛠️ Technical Details
+### Prerequisites
 
-### Built With
-- **HTML5**: Semantic structure and accessibility
-- **CSS3**: Modern styling with CSS Grid, Flexbox, and animations
-- **Vanilla JavaScript**: ES6+ features, no external dependencies
-- **Font Awesome**: Professional icons
-- **Google Fonts**: Inter font family for clean typography
+- Node.js 18+
 
-### Browser Support
-- Chrome 60+
-- Firefox 60+
-- Safari 12+
-- Edge 79+
-
-## 📦 Installation & Setup
-
-### Option 1: Direct Use
-Simply open `index.html` in your web browser. No installation required!
-
-### Option 2: Local Development Server
-For the best experience with live reloading:
+### Install & run (development)
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-### Option 3: Simple HTTP Server
+App defaults to `http://localhost:3000`.
+
+### Build
+
 ```bash
-# Using Node.js http-server
-npm run serve
-
-# Or using Python
-python -m http.server 3000
-
-# Or using PHP
-php -S localhost:3000
+npm run build
 ```
 
-## 🎨 Customization
+This project is configured for static export (`next.config.js` has `output: 'export'`). After building, static files are generated into `out/`.
 
-### Colors
-The app uses CSS custom properties for easy theming. Modify the `:root` variables in `style.css`:
+### Preview static export locally
 
-```css
-:root {
-    --primary-color: #667eea;
-    --success-color: #48bb78;
-    --danger-color: #f56565;
-    /* ... more variables */
-}
+```bash
+npx serve out
 ```
 
-### Timing
-Adjust countdown and notification timings in `script.js`:
+Or deploy the `out/` directory to any static host (Vercel static, Netlify, GitHub Pages, etc.).
 
-```javascript
-// Change initial countdown time (default: 5 seconds)
-let countdown = 5;
+## 🧱 Project Structure
 
-// Modify launch window timing (default: 30 seconds)
-if (elapsed >= launchTimeSeconds - 30) {
-    // Ready phase starts 30 seconds before
-}
+```text
+rally_timings/
+├─ src/
+│  ├─ app/
+│  │  ├─ layout.tsx
+│  │  ├─ page.tsx
+│  │  └─ globals.css
+│  ├─ lib/
+│  │  └─ time.ts
+│  └─ store/
+│     └─ rallyStore.ts
+├─ next.config.js
+├─ tailwind.config.ts
+├─ postcss.config.js
+├─ tsconfig.json
+└─ package.json
 ```
 
-## 🔧 File Structure
+## 🧰 Tech Stack
 
+- Next.js 14 (App Router)
+- React 18 + TypeScript
+- Tailwind CSS
+- Zustand (state management)
+- Framer Motion (animations)
+- Lucide React (icons)
+
+## 📝 Scripts
+
+```bash
+npm run dev     # Start dev server
+npm run build   # Build (static export to out/)
+npm run start   # (Note) For SSR apps. With static export, deploy the out/ folder instead
+npm run lint    # Lint
 ```
-rally-timing-coordinator/
-├── index.html          # Main HTML structure
-├── style.css           # Modern CSS styling and animations
-├── script.js           # Core JavaScript functionality
-├── package.json        # Project configuration
-└── README.md          # This file
-```
 
-## 📱 Responsive Design
+## 📤 Deploying to GitHub Pages
 
-The application is fully responsive and adapts to different screen sizes:
+This repo includes a GitHub Actions workflow that builds and deploys the static export to GitHub Pages from the `V2` branch.
 
-- **Desktop** (1200px+): Two-column layout with full features
-- **Tablet** (768px-1199px): Single column with optimized spacing
-- **Mobile** (320px-767px): Compact layout with touch-friendly controls
+Steps:
 
-## 🎯 Use Cases
+1. In your GitHub repo, go to Settings → Pages, and set Source to “GitHub Actions”.
+2. Push to the `V2` branch (or run the workflow manually). The workflow will:
+   - Set `GITHUB_PAGES=true` and `BASE_PATH=/<repo-name>` to configure Next.js basePath/assetPrefix
+   - Build `out/` via `npm run build`
+   - Deploy `out/` to Pages
 
-- **Strategy Games**: Coordinate attacks in war games
-- **Event Planning**: Synchronize multiple timed events
-- **Team Coordination**: Any scenario requiring precise timing
-- **Educational Tool**: Teaching timing and coordination concepts
+If you use a custom domain or organization page, adjust `BASE_PATH`/remove it accordingly in the workflow/`next.config.js`.
 
-## 🚧 Future Enhancements
+## 🛤️ Roadmap
 
-- [ ] Save/load rally configurations
-- [ ] Export coordination timeline
-- [ ] Multiple target support
-- [ ] Advanced timing calculations
-- [ ] Team templates
-- [ ] Integration with game APIs
+- Save/load rally configurations
+- Export coordination timeline
+- Multiple target support
+- Team templates
+- Integrations
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please open an issue or submit a PR.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🎉 Acknowledgments
-
-- Font Awesome for the beautiful icons
-- Google Fonts for the Inter font family
-- The strategy gaming community for inspiration
+MIT — see `LICENSE` for details.
 
 ---
 
-**Ready to coordinate your next victory? Open the app and start planning! 🏆** 
+Ready to coordinate your next victory? 🏆
