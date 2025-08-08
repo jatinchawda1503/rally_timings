@@ -5,7 +5,7 @@ A modern web application for coordinating rally attacks to ensure synchronized a
 ## ✨ Features
 
 - **Modern UI**: Clean, responsive design with smooth animations
-- **Rally Management**: Add, edit, and remove rally leaders with custom march times and delays
+- **Rally Management**: Add, edit, and remove rally leaders with custom march times and arrival offsets
 - **Smart Sorting**: Automatically sorts rallies by start time (earliest launch first)
 - **Launch Overview**: Visual preview of launch sequence with timing details before starting
 - **Staggered Coordination**: Calculates optimal start times for delayed arrival sequence
@@ -17,12 +17,12 @@ A modern web application for coordinating rally attacks to ensure synchronized a
 ## 🚀 How It Works
 
 ### The Concept
-The goal is to coordinate multiple rally leaders with staggered arrival times. The delay setting controls how many seconds AFTER the first rally hits, each subsequent rally should arrive. Leaders with longer arrival times need to start earlier.
+The goal is to coordinate multiple rally leaders with staggered arrival times. The "Arrival Offset" controls how many seconds AFTER the first rally hits, each subsequent rally should arrive. Leaders with longer march times need to start earlier; leaders with larger offsets arrive later relative to the first hit.
 
 ### Example Scenario
-- **Leader A**: 300 seconds march time + 0 seconds delay = hits at 300s
-- **Leader B**: 300 seconds march time + 1 second delay = hits at 301s  
-- **Leader C**: 300 seconds march time + 2 seconds delay = hits at 302s
+- **Leader A**: 300 seconds march time + 0 seconds offset = hits at 300s
+- **Leader B**: 300 seconds march time + 1 second offset = hits at 301s  
+- **Leader C**: 300 seconds march time + 2 seconds offset = hits at 302s
 
 **Launch Order** (earliest start time first):
 1. Leader A starts immediately (needs 300s to hit at 300s)
@@ -36,12 +36,12 @@ The goal is to coordinate multiple rally leaders with staggered arrival times. T
 1. **Add Rally Leaders**
    - Enter the leader's name
    - Set their march time in seconds (how long it takes to reach the castle)
-   - Add delay in seconds (how many seconds AFTER the first rally this one should hit)
+   - Set Arrival Offset in seconds (how many seconds AFTER the first rally this one should hit)
    - Click "Add Rally Leader"
 
 2. **Review Your Team**
    - Leaders are automatically sorted by start time (earliest first)
-   - Edit march times and delays by clicking the edit button
+   - Edit march times and arrival offsets by clicking the edit button
    - Remove leaders if needed
 
 3. **Preview Launch Strategy**

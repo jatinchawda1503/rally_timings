@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 10px;
+}
+
+html,
+body {
+  scroll-behavior: smooth;
+}
+
+.card {
+  @apply bg-white rounded-lg shadow-xl p-6 transition-transform duration-300;
+}
+
+.card:hover {
+  @apply -translate-y-0.5 shadow-2xl;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:-translate-y-0.5 hover:shadow-lg;
+}
+
+.btn-secondary {
+  @apply bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200;
+}
+
+.btn-success {
+  @apply bg-success text-white hover:-translate-y-0.5 hover:shadow-lg;
+}
+
+.btn-danger {
+  @apply bg-danger text-white hover:-translate-y-0.5 hover:shadow-lg;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full bg-primary px-3 py-1 text-sm font-medium text-white;
+}
+
+
