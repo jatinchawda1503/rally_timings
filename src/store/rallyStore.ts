@@ -18,6 +18,14 @@ type SequenceStatus = { id: string; name: string; state: 'waiting' | 'ready' | '
 // Form state used by the UI
 type FormStateV2 = { name: string; march: number; offset: number };
 
+type SpeechSettings = {
+  enabled: boolean;
+  voiceName?: string;
+  volume: number; // 0..1
+  rate: number; // 0.1..10
+  pitch: number; // 0..2
+};
+
 type Store = {
   leaders: Leader[];
   isActive: boolean;
@@ -26,6 +34,8 @@ type Store = {
   sequenceStatuses: SequenceStatus[];
   form: FormStateV2;
   setForm: (p: Partial<FormStateV2>) => void;
+  speech: SpeechSettings;
+  setSpeech: (p: Partial<SpeechSettings>) => void;
   addLeader: (l: { name: string; marchTime: number; arrivalOffset: number }) => void;
   removeLeader: (id: string) => void;
   updateLeader: (id: string, update: Partial<Leader> & { reset?: boolean }) => void;
@@ -43,6 +53,8 @@ export const useRallyStore = create<Store>((set, get) => ({
   sequenceStatuses: [],
   form: { name: '', march: 0, offset: 0 },
   setForm: (p) => set((s) => ({ form: { ...s.form, ...p } })),
+  speech: { enabled: true, voiceName: undefined, volume: 1, rate: 1, pitch: 1 },
+  setSpeech: (p) => set((s) => ({ speech: { ...s.speech, ...p } })),
   addLeader: ({ name, marchTime, arrivalOffset }) =>
     set((s) => {
       const exists = s.leaders.some((l) => l.name.trim().toLowerCase() === name.trim().toLowerCase());
@@ -117,6 +129,8 @@ export const useRallyStore = create<Store>((set, get) => ({
           const allDone = statuses.every((s) => s.state === 'completed');
           if (allDone) {
             clearInterval(ticker);
+            // Auto-stop coordination when all leaders are completed
+            set({ isActive: false, countdown: 0, startedAt: null, sequenceStatuses: [] });
           }
         }, 250);
       } else {

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRallyStore } from '@/store/rallyStore';
 import { formatSeconds } from '@/lib/time';
-import { Rocket, PlusCircle, List, Users, Clock, Hourglass, Calculator, Edit, Trash2, Info } from 'lucide-react';
+import { speak, isSpeechSupported, listVoices } from '@/lib/speech';
+import { Rocket, PlusCircle, List, Users, Clock, Hourglass, Calculator, Edit, Trash2, Info, Settings } from 'lucide-react';
 
 export default function HomePage() {
   const {
@@ -19,6 +20,8 @@ export default function HomePage() {
   } = useRallyStore();
 
   const coordinationRef = useRef<HTMLDivElement | null>(null);
+  const overviewRef = useRef<HTMLDivElement | null>(null);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
 
   const [name, march, offset] = useRallyStore((s) => [s.form.name, s.form.march, s.form.offset]);
   const setForm = useRallyStore((s) => s.setForm);
@@ -41,6 +44,10 @@ export default function HomePage() {
   const handleStart = () => {
     start();
     setTimeout(() => coordinationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  };
+
+  const goToOverview = () => {
+    overviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
@@ -122,16 +129,27 @@ export default function HomePage() {
 
           <div className="mt-4 flex justify-center gap-3">
             <button className="btn btn-secondary" onClick={() => useRallyStore.getState().clear()} disabled={leaders.length === 0 || isActive}>Clear All</button>
-            <button className="btn btn-success" onClick={handleStart} disabled={leaders.length === 0 || isActive}><Rocket size={18} /> Start Coordination</button>
+            <button className="btn btn-success" onClick={goToOverview} disabled={leaders.length === 0}><Info size={18} /> Go to Overview</button>
           </div>
         </section>
 
+
         {/* Overview */}
-        <section className="card lg:col-span-2">
+        <section className="card lg:col-span-2" ref={overviewRef}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="flex items-center gap-2 text-xl font-semibold"><Info className="text-primary" /> Launch Overview</h2>
-            <span className="badge bg-secondary">{leaders.length} leaders ready</span>
+            <div className="flex items-center gap-2">
+              <button className="btn btn-icon" title="Voice settings" aria-label="Voice settings" onClick={() => setShowVoiceSettings((v) => !v)}>
+                <Settings size={18} />
+              </button>
+              <span className="badge bg-secondary">{leaders.length} leaders ready</span>
+            </div>
           </div>
+          {showVoiceSettings && (
+            <div className="mb-3 rounded-md border-2 border-gray-100 bg-gray-50 p-3">
+              <SpeechSettings />
+            </div>
+          )}
           <p className="mb-4 rounded-md border-l-4 border-primary bg-primary/10 p-3 text-gray-700">
             <Info className="inline mr-2 text-primary" size={16} />
             Arrival Offset = how many seconds after the <span className="font-semibold">first hit</span> this rally should arrive. We compute start times so each leader hits at its offset.
@@ -201,8 +219,128 @@ function EditLeader({ id }: { id: string }) {
   );
 }
 
+function SpeechSettings() {
+  const [speech, setSpeech] = useRallyStore((s) => [s.speech, s.setSpeech]);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    listVoices().then((v) => {
+      if (mounted) setVoices(v);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  return (
+    <div>
+      <h2 className="mb-3 text-xl font-semibold">Voice Settings</h2>
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <input type="checkbox" checked={speech.enabled} onChange={(e) => setSpeech({ enabled: e.target.checked })} />
+          Enable voice prompts
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Voice</label>
+            <select
+              className="w-full rounded-md border-2 border-gray-200 bg-gray-50 px-3 py-2 focus:border-primary outline-none"
+              value={speech.voiceName || ''}
+              onChange={(e) => setSpeech({ voiceName: e.target.value || undefined })}
+              disabled={!speech.enabled}
+            >
+              <option value="">System default</option>
+              {voices.map((v) => (
+                <option key={`${v.name}-${v.lang}`} value={v.name}>
+                  {v.name} ({v.lang})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Volume: {speech.volume.toFixed(1)}</label>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.1}
+              value={speech.volume}
+              onChange={(e) => setSpeech({ volume: Number(e.target.value) })}
+              className="w-full"
+              disabled={!speech.enabled}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rate: {speech.rate.toFixed(1)}</label>
+            <input
+              type="range"
+              min={0.5}
+              max={2}
+              step={0.1}
+              value={speech.rate}
+              onChange={(e) => setSpeech({ rate: Number(e.target.value) })}
+              className="w-full"
+              disabled={!speech.enabled}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Pitch: {speech.pitch.toFixed(1)}</label>
+            <input
+              type="range"
+              min={0.5}
+              max={2}
+              step={0.1}
+              value={speech.pitch}
+              onChange={(e) => setSpeech({ pitch: Number(e.target.value) })}
+              className="w-full"
+              disabled={!speech.enabled}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CoordinationPanel() {
   const { isActive, countdown, sequenceStatuses, stop } = useRallyStore();
+  const speech = useRallyStore((s) => s.speech);
+
+  const announcedGoRef = useRef<Set<string>>(new Set());
+  const lastCountdownRef = useRef<number | null>(null);
+
+  // Speak countdown ticks and "Start" when countdown reaches zero
+  useEffect(() => {
+    if (!isSpeechSupported()) return;
+    if (!isActive) {
+      announcedGoRef.current.clear();
+      lastCountdownRef.current = null;
+      try { window.speechSynthesis?.cancel(); } catch {}
+      return;
+    }
+    if (!speech.enabled) return;
+    if (countdown > 0 && countdown !== lastCountdownRef.current) {
+      speak(String(countdown), { voiceName: speech.voiceName, volume: speech.volume, rate: speech.rate, pitch: speech.pitch });
+      lastCountdownRef.current = countdown;
+    } else if (countdown === 0 && lastCountdownRef.current !== 0) {
+      speak('Start', { voiceName: speech.voiceName, volume: speech.volume, rate: speech.rate, pitch: speech.pitch, interrupt: false });
+      lastCountdownRef.current = 0;
+    }
+  }, [isActive, countdown, speech.enabled, speech.voiceName, speech.volume, speech.rate, speech.pitch]);
+
+  // Announce leader names when they switch to GO
+  useEffect(() => {
+    if (!isSpeechSupported()) return;
+    if (!isActive || countdown > 0 || !speech.enabled) return;
+    for (const s of sequenceStatuses) {
+      if (s.state === 'go' && !announcedGoRef.current.has(s.id)) {
+        announcedGoRef.current.add(s.id);
+        speak(`${s.name}`, { voiceName: speech.voiceName, volume: speech.volume, rate: speech.rate, pitch: speech.pitch, interrupt: false });
+      }
+    }
+  }, [isActive, countdown, sequenceStatuses, speech.enabled, speech.voiceName, speech.volume, speech.rate, speech.pitch]);
+
   return (
     <div>
       <h2 className="mb-3 text-xl font-semibold">Coordination</h2>
