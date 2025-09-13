@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useRallyStore } from '@/store/rallyStore';
 import { formatSeconds } from '@/lib/time';
 import { speak, isSpeechSupported, listVoices } from '@/lib/speech';
-import { Rocket, PlusCircle, List, Users, Clock, Hourglass, Calculator, Edit, Trash2, Info, Settings, ArrowLeft } from 'lucide-react';
+import { Rocket, PlusCircle, List, Users, Clock, Hourglass, Calculator, Edit, Trash2, Info, Settings, ArrowLeft, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RallyTimerPage() {
@@ -18,11 +18,18 @@ export default function RallyTimerPage() {
     calculateLaunch,
     start,
     stop,
+    exportToExcel,
+    importFromExcel,
+    downloadSampleExcel,
   } = useRallyStore();
 
   const coordinationRef = useRef<HTMLDivElement | null>(null);
   const overviewRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const [name, march, offset] = useRallyStore((s) => [s.form.name, s.form.march, s.form.offset]);
   const setForm = useRallyStore((s) => s.setForm);
@@ -66,6 +73,43 @@ export default function RallyTimerPage() {
 
   const goToOverview = () => {
     overviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleExport = () => {
+    exportToExcel();
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportError(null);
+    setImportSuccess(false);
+
+    try {
+      const result = await importFromExcel(file);
+
+      if (result.success) {
+        setImportSuccess(true);
+        setTimeout(() => setImportSuccess(false), 3000);
+      } else {
+        setImportError(result.error || 'Import failed');
+      }
+    } catch (error) {
+      setImportError('An unexpected error occurred during import');
+    } finally {
+      setIsImporting(false);
+    }
+
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDownloadSample = () => {
+    downloadSampleExcel();
   };
 
   return (
@@ -117,6 +161,63 @@ export default function RallyTimerPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="flex items-center gap-2 text-xl font-semibold"><List className="text-primary" /> Rally Leaders</h2>
             <span className="badge">{leaders.length} ready</span>
+          </div>
+
+          {/* Import/Export Controls */}
+          <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <FileSpreadsheet size={16} className="text-primary" />
+                Excel Import/Export
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-secondary text-xs px-3 py-1"
+                  onClick={handleDownloadSample}
+                  title="Download sample Excel file with instructions"
+                >
+                  <Download size={14} /> Sample
+                </button>
+                <button
+                  className="btn btn-primary text-xs px-3 py-1"
+                  onClick={handleExport}
+                  disabled={leaders.length === 0}
+                  title="Export current configuration to Excel"
+                >
+                  <Download size={14} /> Export
+                </button>
+                <button
+                  className="btn btn-secondary text-xs px-3 py-1"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isActive || isImporting}
+                  title="Import configuration from Excel file"
+                >
+                  <Upload size={14} /> {isImporting ? 'Importing...' : 'Import'}
+                </button>
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleImport}
+              className="hidden"
+            />
+            <p className="text-xs text-gray-600">
+              Download sample Excel file, edit it with your rally leaders, and import back for easy configuration.
+            </p>
+
+            {/* Import Status Messages */}
+            {importError && (
+              <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded text-red-700 text-xs">
+                <strong>Import Error:</strong> {importError}
+              </div>
+            )}
+            {importSuccess && (
+              <div className="mt-2 p-2 bg-green-100 border border-green-300 rounded text-green-700 text-xs">
+                <strong>Success:</strong> Configuration imported successfully! {leaders.length} leaders loaded.
+              </div>
+            )}
           </div>
 
           <div className="space-y-3 min-h-[160px]">
