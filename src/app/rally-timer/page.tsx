@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useRallyStore } from '@/store/rallyStore';
 import { formatSeconds } from '@/lib/time';
 import { speak, isSpeechSupported, listVoices } from '@/lib/speech';
-import { Rocket, PlusCircle, List, Users, Clock, Hourglass, Calculator, Edit, Trash2, Info, Settings, ArrowLeft } from 'lucide-react';
+import { Rocket, PlusCircle, List, Users, Clock, Hourglass, Calculator, Edit, Trash2, Info, Settings, ArrowLeft, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RallyTimerPage() {
@@ -18,16 +18,40 @@ export default function RallyTimerPage() {
     calculateLaunch,
     start,
     stop,
+    exportToExcel,
+    importFromExcel,
+    downloadSampleExcel,
   } = useRallyStore();
 
   const coordinationRef = useRef<HTMLDivElement | null>(null);
   const overviewRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const [name, march, offset] = useRallyStore((s) => [s.form.name, s.form.march, s.form.offset]);
   const setForm = useRallyStore((s) => s.setForm);
 
-  const launchSequence = useMemo(() => calculateLaunch(), [leaders, calculateLaunch]);
+  const launchSequence = useMemo(() => {
+    if (leaders.length === 0) return [];
+    // Interpret arrivalOffset as "hits castle after the first hit by X seconds".
+    // Compute base = max(marchTime - arrivalOffset) to ensure all startOffsets are >= 0 and
+    // the earliest start is 0. Each leader i then starts at:
+    //   startOffset_i = base - (marchTime_i - arrivalOffset_i)
+    // and hits at:
+    //   arrivalTime_i = startOffset_i + marchTime_i = base + arrivalOffset_i
+    const base = Math.max(...leaders.map((l) => l.marchTime - l.arrivalOffset));
+    const seq = leaders
+      .map((l) => {
+        const startOffset = base - (l.marchTime - l.arrivalOffset);
+        const arrivalTime = startOffset + l.marchTime; // equals base + arrivalOffset
+        return { ...l, startOffset, arrivalTime };
+      })
+      .sort((a, b) => a.startOffset - b.startOffset);
+    return seq;
+  }, [leaders]);
 
   useEffect(() => {
     // focus name on mount
@@ -49,6 +73,43 @@ export default function RallyTimerPage() {
 
   const goToOverview = () => {
     overviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleExport = () => {
+    exportToExcel();
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportError(null);
+    setImportSuccess(false);
+
+    try {
+      const result = await importFromExcel(file);
+
+      if (result.success) {
+        setImportSuccess(true);
+        setTimeout(() => setImportSuccess(false), 3000);
+      } else {
+        setImportError(result.error || 'Import failed');
+      }
+    } catch (error) {
+      setImportError('An unexpected error occurred during import');
+    } finally {
+      setIsImporting(false);
+    }
+
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDownloadSample = () => {
+    downloadSampleExcel();
   };
 
   return (
@@ -100,6 +161,63 @@ export default function RallyTimerPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="flex items-center gap-2 text-xl font-semibold"><List className="text-primary" /> Rally Leaders</h2>
             <span className="badge">{leaders.length} ready</span>
+          </div>
+
+          {/* Import/Export Controls */}
+          <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <FileSpreadsheet size={16} className="text-primary" />
+                Excel Import/Export
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-secondary text-xs px-3 py-1"
+                  onClick={handleDownloadSample}
+                  title="Download sample Excel file with instructions"
+                >
+                  <Download size={14} /> Sample
+                </button>
+                <button
+                  className="btn btn-primary text-xs px-3 py-1"
+                  onClick={handleExport}
+                  disabled={leaders.length === 0}
+                  title="Export current configuration to Excel"
+                >
+                  <Download size={14} /> Export
+                </button>
+                <button
+                  className="btn btn-secondary text-xs px-3 py-1"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isActive || isImporting}
+                  title="Import configuration from Excel file"
+                >
+                  <Upload size={14} /> {isImporting ? 'Importing...' : 'Import'}
+                </button>
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleImport}
+              className="hidden"
+            />
+            <p className="text-xs text-gray-600">
+              Download sample Excel file, edit it with your rally leaders, and import back for easy configuration.
+            </p>
+
+            {/* Import Status Messages */}
+            {importError && (
+              <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded text-red-700 text-xs">
+                <strong>Import Error:</strong> {importError}
+              </div>
+            )}
+            {importSuccess && (
+              <div className="mt-2 p-2 bg-green-100 border border-green-300 rounded text-green-700 text-xs">
+                <strong>Success:</strong> Configuration imported successfully! {leaders.length} leaders loaded.
+              </div>
+            )}
           </div>
 
           <div className="space-y-3 min-h-[160px]">
@@ -202,22 +320,52 @@ export default function RallyTimerPage() {
 function EditLeader({ id }: { id: string }) {
   const leader = useRallyStore((s) => s.leaders.find((l) => l.id === id)!);
   const updateLeader = useRallyStore((s) => s.updateLeader);
+  const [marchTime, setMarchTime] = useState(leader.marchTime);
+  const [arrivalOffset, setArrivalOffset] = useState(leader.arrivalOffset);
+
+  const handleSave = () => {
+    updateLeader(id, {
+      marchTime,
+      arrivalOffset,
+      editing: false
+    });
+  };
+
+  const handleCancel = () => {
+    setMarchTime(leader.marchTime);
+    setArrivalOffset(leader.arrivalOffset);
+    updateLeader(id, { editing: false, reset: true });
+  };
 
   return (
     <div className="mt-3 rounded-md border-2 border-gray-200 bg-white p-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">March Time (s)</label>
-          <input type="number" min={1} step={1} defaultValue={leader.marchTime} onChange={(e) => updateLeader(id, { marchTime: Number(e.target.value) })} className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary outline-none" />
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={marchTime}
+            onChange={(e) => setMarchTime(Number(e.target.value))}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary outline-none"
+          />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Arrival Offset (s)</label>
-          <input type="number" min={0} step={1} defaultValue={leader.arrivalOffset} onChange={(e) => updateLeader(id, { arrivalOffset: Number(e.target.value) })} className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary outline-none" />
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={arrivalOffset}
+            onChange={(e) => setArrivalOffset(Number(e.target.value))}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary outline-none"
+          />
         </div>
       </div>
       <div className="mt-3 flex justify-center gap-2">
-        <button className="btn btn-primary" onClick={() => updateLeader(id, { editing: false })}>Save</button>
-        <button className="btn btn-secondary" onClick={() => updateLeader(id, { editing: false, reset: true })}>Cancel</button>
+        <button className="btn btn-primary" onClick={handleSave}>Save</button>
+        <button className="btn btn-secondary" onClick={handleCancel}>Cancel</button>
       </div>
     </div>
   );
@@ -313,6 +461,15 @@ function CoordinationPanel() {
 
   const announcedGoRef = useRef<Set<string>>(new Set());
   const lastCountdownRef = useRef<number | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      announcedGoRef.current.clear();
+      lastCountdownRef.current = null;
+      try { window.speechSynthesis?.cancel(); } catch {}
+    };
+  }, []);
 
   // Speak countdown ticks and "Start" when countdown reaches zero
   useEffect(() => {
