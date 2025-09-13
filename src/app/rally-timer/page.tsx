@@ -27,7 +27,24 @@ export default function RallyTimerPage() {
   const [name, march, offset] = useRallyStore((s) => [s.form.name, s.form.march, s.form.offset]);
   const setForm = useRallyStore((s) => s.setForm);
 
-  const launchSequence = useMemo(() => calculateLaunch(), [leaders, calculateLaunch]);
+  const launchSequence = useMemo(() => {
+    if (leaders.length === 0) return [];
+    // Interpret arrivalOffset as "hits castle after the first hit by X seconds".
+    // Compute base = max(marchTime - arrivalOffset) to ensure all startOffsets are >= 0 and
+    // the earliest start is 0. Each leader i then starts at:
+    //   startOffset_i = base - (marchTime_i - arrivalOffset_i)
+    // and hits at:
+    //   arrivalTime_i = startOffset_i + marchTime_i = base + arrivalOffset_i
+    const base = Math.max(...leaders.map((l) => l.marchTime - l.arrivalOffset));
+    const seq = leaders
+      .map((l) => {
+        const startOffset = base - (l.marchTime - l.arrivalOffset);
+        const arrivalTime = startOffset + l.marchTime; // equals base + arrivalOffset
+        return { ...l, startOffset, arrivalTime };
+      })
+      .sort((a, b) => a.startOffset - b.startOffset);
+    return seq;
+  }, [leaders]);
 
   useEffect(() => {
     // focus name on mount
@@ -202,22 +219,52 @@ export default function RallyTimerPage() {
 function EditLeader({ id }: { id: string }) {
   const leader = useRallyStore((s) => s.leaders.find((l) => l.id === id)!);
   const updateLeader = useRallyStore((s) => s.updateLeader);
+  const [marchTime, setMarchTime] = useState(leader.marchTime);
+  const [arrivalOffset, setArrivalOffset] = useState(leader.arrivalOffset);
+
+  const handleSave = () => {
+    updateLeader(id, {
+      marchTime,
+      arrivalOffset,
+      editing: false
+    });
+  };
+
+  const handleCancel = () => {
+    setMarchTime(leader.marchTime);
+    setArrivalOffset(leader.arrivalOffset);
+    updateLeader(id, { editing: false, reset: true });
+  };
 
   return (
     <div className="mt-3 rounded-md border-2 border-gray-200 bg-white p-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">March Time (s)</label>
-          <input type="number" min={1} step={1} defaultValue={leader.marchTime} onChange={(e) => updateLeader(id, { marchTime: Number(e.target.value) })} className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary outline-none" />
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={marchTime}
+            onChange={(e) => setMarchTime(Number(e.target.value))}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary outline-none"
+          />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Arrival Offset (s)</label>
-          <input type="number" min={0} step={1} defaultValue={leader.arrivalOffset} onChange={(e) => updateLeader(id, { arrivalOffset: Number(e.target.value) })} className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary outline-none" />
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={arrivalOffset}
+            onChange={(e) => setArrivalOffset(Number(e.target.value))}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary outline-none"
+          />
         </div>
       </div>
       <div className="mt-3 flex justify-center gap-2">
-        <button className="btn btn-primary" onClick={() => updateLeader(id, { editing: false })}>Save</button>
-        <button className="btn btn-secondary" onClick={() => updateLeader(id, { editing: false, reset: true })}>Cancel</button>
+        <button className="btn btn-primary" onClick={handleSave}>Save</button>
+        <button className="btn btn-secondary" onClick={handleCancel}>Cancel</button>
       </div>
     </div>
   );
@@ -313,6 +360,15 @@ function CoordinationPanel() {
 
   const announcedGoRef = useRef<Set<string>>(new Set());
   const lastCountdownRef = useRef<number | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      announcedGoRef.current.clear();
+      lastCountdownRef.current = null;
+      try { window.speechSynthesis?.cancel(); } catch {}
+    };
+  }, []);
 
   // Speak countdown ticks and "Start" when countdown reaches zero
   useEffect(() => {

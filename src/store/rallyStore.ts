@@ -105,8 +105,11 @@ export const useRallyStore = create<Store>((set, get) => ({
         set({ countdown: 0, startedAt: Date.now(), sequenceStatuses: seq.map((x) => ({ id: x.id, name: x.name, state: 'waiting', label: 'Waiting' })) });
         // launch ticker every 250ms
         const ticker = setInterval(() => {
-          const { startedAt } = get();
-          if (!startedAt) return;
+          const { startedAt, isActive } = get();
+          if (!startedAt || !isActive) {
+            clearInterval(ticker);
+            return;
+          }
           const elapsed = (Date.now() - startedAt) / 1000; // seconds
           const statuses: SequenceStatus[] = seq.map((l) => {
             const launchS = l.startOffset;
